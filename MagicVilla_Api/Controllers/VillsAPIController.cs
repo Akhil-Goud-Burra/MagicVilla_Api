@@ -4,6 +4,7 @@ using MagicVilla_Api.Models;
 using MagicVilla_Api.Models.Dto;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MagicVilla_Api.Controllers
 {
@@ -24,10 +25,11 @@ namespace MagicVilla_Api.Controllers
         [HttpGet]
 
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult< IEnumerable<VillaDTO> > GetVillas()
+        public async Task< ActionResult< IEnumerable<VillaDTO> > > GetVillas()
         {
-            return Ok(app_db_context.Villas.ToList());
+            return Ok(await app_db_context.Villas.ToListAsync());
         }
+
 
 
 
@@ -38,16 +40,18 @@ namespace MagicVilla_Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult< VillaDTO > GetVilla(int id)
+        public async Task< ActionResult< VillaDTO > > GetVilla(int id)
         {
 
             if (id == 0) { return BadRequest(); }
 
-            var villa = app_db_context.Villas.FirstOrDefault(u => u.Id == id);
+            var villa = await app_db_context.Villas.FirstOrDefaultAsync(u => u.Id == id);
             if (villa == null) {  return NotFound(); }
 
             return Ok(villa);
         }
+
+
 
 
 
@@ -58,10 +62,10 @@ namespace MagicVilla_Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
 
-        public ActionResult<VillaDTO> CreateVilla([FromBody] VillaCreateDTO villaobj)
+        public async Task< ActionResult<VillaDTO> > CreateVilla([FromBody] VillaCreateDTO villaobj)
         {
 
-            if (app_db_context.Villas.FirstOrDefault(u => u.Name.ToLower() == villaobj.Name.ToLower()) != null)
+            if (await app_db_context.Villas.FirstOrDefaultAsync(u => u.Name.ToLower() == villaobj.Name.ToLower()) != null)
             {
                 ModelState.AddModelError("CustomError", "Villa Already Exists!");
                 return BadRequest(ModelState); 
@@ -80,11 +84,13 @@ namespace MagicVilla_Api.Controllers
                 Sqft = villaobj.Sqft 
             };
 
-            app_db_context.Villas.Add(model);
-            app_db_context.SaveChanges();
+            await app_db_context.Villas.AddAsync(model);
+            await app_db_context.SaveChangesAsync();
 
             return CreatedAtRoute("GetVilla", new {id= model.Id} , model);
         }
+
+
 
 
 
@@ -95,25 +101,26 @@ namespace MagicVilla_Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
 
-        public IActionResult DeleteVilla( int id )
+        public async Task< IActionResult > DeleteVilla( int id )
         {
             if (id == 0) { return BadRequest(); }
 
-            var Villa = app_db_context.Villas.FirstOrDefault(u =>u.Id == id);
+            var Villa = await app_db_context.Villas.FirstOrDefaultAsync(u =>u.Id == id);
             if (Villa == null) { return  NotFound(); }
 
             app_db_context.Villas.Remove(Villa);
 
-            app_db_context.SaveChanges();
+            await app_db_context.SaveChangesAsync();
 
             return NoContent();
         }
 
 
 
+
         // This is for Updating a villa
         [HttpPut("{id:int}", Name = "UpdateVilla")]
-        public IActionResult UpdateVilla(int id, [FromBody] VillaUpdateDTO villaobj_put)
+        public async Task< IActionResult > UpdateVilla(int id, [FromBody] VillaUpdateDTO villaobj_put)
         {
             if (villaobj_put == null || id != villaobj_put.Id)
             {
@@ -121,7 +128,7 @@ namespace MagicVilla_Api.Controllers
             }
 
             // Retrieve the existing villa from the database
-            var existingVilla = app_db_context.Villas.Find(id);
+            var existingVilla = await app_db_context.Villas.FindAsync(id);
 
             if (existingVilla == null)
             {
@@ -138,7 +145,7 @@ namespace MagicVilla_Api.Controllers
             existingVilla.Sqft = villaobj_put.Sqft;
 
             // Save the changes to the database
-            app_db_context.SaveChanges();
+            await app_db_context.SaveChangesAsync();
 
             return Ok();
         }
